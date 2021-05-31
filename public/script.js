@@ -1,8 +1,17 @@
 const form = document.getElementById("form");
 const downloadBtn = document.getElementById("downloadBtn")
+const source = new EventSource('/events');
 
 form.addEventListener("submit", submitForm);
 downloadBtn.addEventListener("click", download);
+
+  source.onmessage = function(e){
+   console.log(e.data);
+   if (e.data === true){
+    displayZipBtn ();
+   }
+  }
+
 
 /// submit files
 function submitForm(e) {

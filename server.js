@@ -5,13 +5,14 @@ const fs = require('fs');
 const archiver = require('archiver');
 var n = require('nonce')();
 
-let musicFileName, coverFileName, nonce;
-
+let musicFileName, coverFileName, nonce, zipComplete;
+zipComplete = false;
 
 // express middlewares
 function createNonce(req, res, next){
     //create nonce for unique id of files
     nonce = n();
+    
     next();
 }
 
@@ -53,13 +54,12 @@ const upload = multer({
 
 //last middleware of the /upload route (user submit form): zip the files https://www.npmjs.com/package/archiver
 function uploadFiles(req, res) {
-
+  
   const output = fs.createWriteStream(__dirname + '/uploads/'+ nonce +'.zip');
 
   let archive = archiver('zip', { zlib: { level: 9 } });
   output.on('close', function () {
-    console.log(archive.pointer() + ' total bytes');
-    console.log('archiver has been finalized and the output file descriptor has closed.');
+    zipComplete = true;
   });
 
   // This event is fired when the data source is drained no matter what was the data source.
@@ -123,6 +123,18 @@ app.use(express.static(__dirname + '/public'));
 
 app.post("/upload", createNonce, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
 app.get("/download", downloadFile);
+app.get("/events", function(req, res){
+  console.log('Got /events');
+    res.set({
+      'Cache-Control': 'no-cache',
+      'Content-Type': 'text/event-stream',
+      'Connection': 'keep-alive'
+    });
+    res.flushHeaders();
+    res.write('data:'+zipComplete + '\n\n');
+    res.end();
+
+});
 
 
 app.listen(5000, () => {
