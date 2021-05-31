@@ -6,13 +6,12 @@ const archiver = require('archiver');
 var n = require('nonce')();
 
 let musicFileName, coverFileName, nonce, zipComplete;
-zipComplete = false;
 
 // express middlewares
 function createNonce(req, res, next){
     //create nonce for unique id of files
     nonce = n();
-    
+    zipComplete = false;
     next();
 }
 
@@ -100,6 +99,7 @@ function uploadFiles(req, res) {
 
 //middleware for /download route (user clicks download btn to get the zip file)
 function downloadFile(req, res) {
+  zipComplete = false;
   let file = `${__dirname}/uploads/${nonce}.zip`
   res.download(file, 'file-to-mint.zip', deleteDoneFiles);
 }

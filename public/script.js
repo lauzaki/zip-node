@@ -7,7 +7,7 @@ downloadBtn.addEventListener("click", download);
 
   source.onmessage = function(e){
    console.log(e.data);
-   if (e.data === true){
+   if (e.data == 'true'){
     displayZipBtn ();
    }
   }
@@ -26,7 +26,6 @@ function submitForm(e) {
         method: 'post',
         body: formData
     })
-        .then(displayZipBtn())
         .catch((err) => ("Error occured", err));
 }
 
