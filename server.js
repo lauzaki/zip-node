@@ -3,13 +3,23 @@ const path = require('path');
 const multer = require("multer");
 const fs = require('fs');
 const archiver = require('archiver');
+var n = require('nonce')();
 
-let musicFileName, coverFileName;
+let musicFileName, coverFileName, nonce;
 
+
+// express middlewares
+function createNonce(req, res, next){
+    //create nonce for unique id of files
+    nonce = n();
+    next();
+}
+
+//multer setup
 const imageStorage = multer.diskStorage({
   destination: 'uploads',
   filename: (req, file, cb) => {
-    let fileName = file.fieldname + '_' + Date.now() + path.extname(file.originalname);
+    let fileName = file.fieldname + '_' + nonce + path.extname(file.originalname);
     switch (file.fieldname) {
       case 'cover':
         coverFileName = fileName;
@@ -20,15 +30,16 @@ const imageStorage = multer.diskStorage({
       default:
         console.log("file name error");
     }
-    cb(null, file.fieldname + '_' + Date.now()
+    cb(null, file.fieldname + '_' + nonce
       + path.extname(file.originalname))
   }
 });
 
+//multer middleware
 const upload = multer({
   storage: imageStorage,
   limits: {
-    fileSize: 10000000 // 1000000 Bytes = 1 MB
+    fileSize: 30000000 // 1000000 Bytes = 1 MB
     ,
     fileFilter(req, file, cb) {
       if (!file.originalname.match(/\.(png|jpg|mp3)$/)) {
@@ -40,9 +51,10 @@ const upload = multer({
   }
 });
 
+//last middleware of the /upload route (user submit form): zip the files https://www.npmjs.com/package/archiver
 function uploadFiles(req, res) {
 
-  const output = fs.createWriteStream(__dirname + '/uploads/music-to-mint.zip');
+  const output = fs.createWriteStream(__dirname + '/uploads/'+ nonce +'.zip');
 
   let archive = archiver('zip', { zlib: { level: 9 } });
   output.on('close', function () {
@@ -75,10 +87,7 @@ function uploadFiles(req, res) {
   // Send the file to the page output.
   archive.pipe(output);
 
-  // Create zip with some files. Two dynamic, one static. Put #2 in a sub folder.
-  //archive.file(coverFileName, { name: 'cover.jpg' })
-  // .file(musicFileName, { name: 'music.mp3' })
-  //.finalize();
+  // Create zip 
   const file1 = __dirname + '/uploads/' + coverFileName;
   const file2 = __dirname + '/uploads/' + musicFileName;
   const file3 = __dirname + '/public/template.html';
@@ -87,16 +96,30 @@ function uploadFiles(req, res) {
   archive.append(fs.createReadStream(file3), { name: 'index.html' });
 }
 
+//middleware for /download route (user clicks download btn to get the zip file)
 function downloadFile(req, res) {
-  let file = `${__dirname}//uploads/music-to-mint.zip`
-  res.download(file);
+  let file = `${__dirname}/uploads/${nonce}.zip`
+  res.download(file, 'file-to-mint.zip', deleteDoneFiles);
 }
 
+//helpers
+function deleteDoneFiles (){
+  let p = __dirname + '/uploads/';
+  fs.unlink(p + nonce+'.zip', unlinkCb);
+  fs.unlink(p + 'music_'+nonce+'.mp3', unlinkCb);
+  fs.unlink(p + 'cover_'+nonce+'.jpg', unlinkCb);
+}
+
+function unlinkCb(e){
+  console.log(e);
+}
+
+// Initialisa express
 const app = express();
 
 app.use(express.static(__dirname + '/public'));
 
-app.post("/upload", upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
+app.post("/upload", createNonce, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
 app.get("/download", downloadFile);
 
 

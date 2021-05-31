@@ -5,7 +5,7 @@ form.addEventListener("submit", submitForm);
 downloadBtn.addEventListener("click", download);
 
 function download(e) {
-    window.open("http://localhost:5000/download");
+    window.open("/download");
 }
 
 
@@ -16,7 +16,7 @@ function submitForm(e) {
     const formData = new FormData();
     formData.append("cover", cover.files[0], 'cover.jpg');
     formData.append("music", music.files[0], 'music.mp3');
-    fetch("http://localhost:5000/upload", {
+    fetch("/upload", {
         method: 'post',
         body: formData
     })
