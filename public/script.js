@@ -4,13 +4,10 @@ const downloadBtn = document.getElementById("downloadBtn")
 form.addEventListener("submit", submitForm);
 downloadBtn.addEventListener("click", download);
 
-function download(e) {
-    window.open("/download");
-}
-
-
+/// submit files
 function submitForm(e) {
     e.preventDefault();
+    form.style.display = "none";
     const cover = document.getElementById("cover");
     const music = document.getElementById("music");
     const formData = new FormData();
@@ -20,7 +17,15 @@ function submitForm(e) {
         method: 'post',
         body: formData
     })
-        .then((res) => console.log(res))
+        .then(displayZipBtn())
         .catch((err) => ("Error occured", err));
 }
 
+function displayZipBtn (){
+    downloadBtn.style.display = 'block';
+}
+
+//download zip
+function download(e) {
+    window.open("/download");
+}

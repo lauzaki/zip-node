@@ -111,7 +111,7 @@ function deleteDoneFiles (){
 }
 
 function unlinkCb(e){
-  console.log(e);
+  //console.log(e);
 }
 
 // Initialisa express

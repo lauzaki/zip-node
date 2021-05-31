@@ -1,6 +1,6 @@
 /* style.css */
 body {
-    background-color: rgb(6, 26, 27);
+    background-color: rgb(0, 0, 0);
 }
 * {
     box-sizing: border-box;
@@ -32,10 +32,14 @@ form input {
 .submit-btn {
     width: 100%;
     border: none;
-    background: rgb(37, 83, 3);
+    background: rgb(65, 65, 65);
     font-size: 18px;
     color: white;
     border-radius: 3px;
     padding: 20px;
     text-align: center;
+}
+
+#downloadBtn {
+    display: none;
 }
