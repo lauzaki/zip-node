@@ -91,9 +91,13 @@ function uploadFiles(req, res) {
   const file1 = __dirname + '/uploads/' + coverFileName;
   const file2 = __dirname + '/uploads/' + musicFileName;
   const file3 = __dirname + '/public/template.html';
+  const file4 = __dirname + '/public/script.js';
+  const file5 = __dirname + '/public/style.css';
   archive.append(fs.createReadStream(file1), { name: 'cover.jpg' });
   archive.append(fs.createReadStream(file2), { name: 'music.mp3' });
   archive.append(fs.createReadStream(file3), { name: 'index.html' });
+  archive.append(fs.createReadStream(file4), { name: 'script.js' });
+  archive.append(fs.createReadStream(file5), { name: 'style.css' });
 }
 
 //middleware for /download route (user clicks download btn to get the zip file)
