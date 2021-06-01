@@ -5,13 +5,16 @@ const fs = require('fs');
 const archiver = require('archiver');
 var n = require('nonce')();
 
-let musicFileName, coverFileName, nonce, zipComplete;
+let musicFileName, coverFileName, nonce, state;
+
+state = 'displayForm';
+
 
 // express middlewares
 function createNonce(req, res, next){
     //create nonce for unique id of files
     nonce = n();
-    zipComplete = false;
+    state = 'processing';
     next();
 }
 
@@ -58,7 +61,8 @@ function uploadFiles(req, res) {
 
   let archive = archiver('zip', { zlib: { level: 9 } });
   output.on('close', function () {
-    zipComplete = true;
+    //the zip is ready to be downloaded
+    state = 'zipReady';
   });
 
   // This event is fired when the data source is drained no matter what was the data source.
@@ -99,7 +103,8 @@ function uploadFiles(req, res) {
 
 //middleware for /download route (user clicks download btn to get the zip file)
 function downloadFile(req, res) {
-  zipComplete = false;
+  //user clicked the download button, reinitialise the form
+  state = 'displayForm';
   let file = `${__dirname}/uploads/${nonce}.zip`
   res.download(file, 'file-to-mint.zip', deleteDoneFiles);
 }
@@ -123,19 +128,19 @@ app.use(express.static(__dirname + '/public'));
 
 app.post("/upload", createNonce, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
 app.get("/download", downloadFile);
-app.get("/events", function(req, res){
-  console.log('Got /events');
+/*app.get("/events", function(req, res){
+  console.log(state);
     res.set({
       'Cache-Control': 'no-cache',
       'Content-Type': 'text/event-stream',
       'Connection': 'keep-alive'
     });
-    res.flushHeaders();
-    res.write('data:'+zipComplete + '\n\n');
+
+    res.write('data:'+state + '\n\n');
     res.end();
 
 });
-
+*/
 
 app.listen(5000, () => {
   console.log(`Server started...`);
