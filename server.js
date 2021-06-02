@@ -1,9 +1,8 @@
-const express = require("express");
 const path = require('path');
 const multer = require("multer");
 const fs = require('fs');
 const archiver = require('archiver');
-var n = require('nonce')();
+const FileReader = require('filereader')
 
 let musicFileName, coverFileName, nonce, state;
 
@@ -11,9 +10,7 @@ state = 'displayForm';
 
 
 // express middlewares
-function createNonce(req, res, next){
-    //create nonce for unique id of files
-    nonce = n();
+function setStateProcessing(req, res, next){
     state = 'processing';
     next();
 }
@@ -22,7 +19,7 @@ function createNonce(req, res, next){
 const imageStorage = multer.diskStorage({
   destination: 'uploads',
   filename: (req, file, cb) => {
-    let fileName = file.fieldname + '_' + nonce + path.extname(file.originalname);
+    let fileName = file.fieldname + '_' + "xxx" + path.extname(file.originalname);
     switch (file.fieldname) {
       case 'cover':
         coverFileName = fileName;
@@ -30,10 +27,17 @@ const imageStorage = multer.diskStorage({
       case 'music':
         musicFileName = fileName;
         break;
+      case 'socketId':
+       
+          console.log(req.body);
+        
+
+        
+        break;
       default:
         console.log("file name error");
     }
-    cb(null, file.fieldname + '_' + nonce
+    cb(null, file.fieldname + '_' + "xxX"
       + path.extname(file.originalname))
   }
 });
@@ -121,28 +125,33 @@ function unlinkCb(e){
   //console.log(e);
 }
 
-// Initialisa express
+// Initialisa express and socket.io
+const express = require('express');
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
 
 app.use(express.static(__dirname + '/public'));
-
-app.post("/upload", createNonce, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
-app.get("/download", downloadFile);
-/*app.get("/events", function(req, res){
-  console.log(state);
-    res.set({
-      'Cache-Control': 'no-cache',
-      'Content-Type': 'text/event-stream',
-      'Connection': 'keep-alive'
-    });
-
-    res.write('data:'+state + '\n\n');
-    res.end();
-
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
 });
-*/
 
-app.listen(5000, () => {
+io.on('connection', (socket) => {
+  console.log('a user connected   '+ socket.id);
+  let socketId = socket.id;
+  socket.emit('socketId', socketId);
+  socket.on('disconnect', () => {
+    console.log('disconnect  '+ socketId);
+  });
+});
+
+
+
+app.post("/upload", setStateProcessing, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }, { name: 'socketId'}]), uploadFiles);
+app.get("/download", downloadFile);
+
+server.listen(3000, () => {
   console.log(`Server started...`);
 });
-

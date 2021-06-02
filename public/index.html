@@ -17,10 +17,12 @@
                 <label for='files'>Select your mp3 music file</label>
                 <input id='music' name="music" type="file">
             </div>
+            <input id='socketId' name="socketId" type="text">
             <button class="submit-btn" type='submit'>Upload</button>
         </form>
         <div id='processing'>processing</div>
         <button id="downloadBtn" class="submit-btn">Download</button>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src='./script.js'></script>
 </body>
