@@ -2,16 +2,9 @@ const path = require('path');
 const multer = require("multer");
 const fs = require('fs');
 const archiver = require('archiver');
-const FileReader = require('filereader')
-
-let musicFileName, coverFileName, nonce, state;
-
-state = 'displayForm';
-
 
 // express middlewares
-function setStateProcessing(req, res, next){
-    state = 'processing';
+function setStateProcessing(req, res, next){  
     next();
 }
 
@@ -19,26 +12,9 @@ function setStateProcessing(req, res, next){
 const imageStorage = multer.diskStorage({
   destination: 'uploads',
   filename: (req, file, cb) => {
-    let fileName = file.fieldname + '_' + "xxx" + path.extname(file.originalname);
-    switch (file.fieldname) {
-      case 'cover':
-        coverFileName = fileName;
-        break;
-      case 'music':
-        musicFileName = fileName;
-        break;
-      case 'socketId':
-       
-          console.log(req.body);
-        
-
-        
-        break;
-      default:
-        console.log("file name error");
-    }
-    cb(null, file.fieldname + '_' + "xxX"
-      + path.extname(file.originalname))
+    const id = req.headers.socketid;
+    let fileName = file.fieldname + '_' + id+ path.extname(file.originalname);
+    cb(null, fileName)
   }
 });
 
@@ -60,13 +36,14 @@ const upload = multer({
 
 //last middleware of the /upload route (user submit form): zip the files https://www.npmjs.com/package/archiver
 function uploadFiles(req, res) {
-  
-  const output = fs.createWriteStream(__dirname + '/uploads/'+ nonce +'.zip');
+
+  const id = req.headers.socketid;
+  const output = fs.createWriteStream(__dirname + '/uploads/'+ id +'.zip');
 
   let archive = archiver('zip', { zlib: { level: 9 } });
   output.on('close', function () {
     //the zip is ready to be downloaded
-    state = 'zipReady';
+    io.to(id).emit('event','Zip_Ready');
   });
 
   // This event is fired when the data source is drained no matter what was the data source.
@@ -95,8 +72,8 @@ function uploadFiles(req, res) {
   archive.pipe(output);
 
   // Create zip 
-  const file1 = __dirname + '/uploads/' + coverFileName;
-  const file2 = __dirname + '/uploads/' + musicFileName;
+  const file1 = __dirname + '/uploads/cover_' + id + '.jpg';
+  const file2 = __dirname + '/uploads/music_' + id + '.mp3';
   const file3 = __dirname + '/public/template.html';
 
   archive.append(fs.createReadStream(file1), { name: 'cover.jpg' });
@@ -107,18 +84,30 @@ function uploadFiles(req, res) {
 
 //middleware for /download route (user clicks download btn to get the zip file)
 function downloadFile(req, res) {
-  //user clicked the download button, reinitialise the form
-  state = 'displayForm';
-  let file = `${__dirname}/uploads/${nonce}.zip`
-  res.download(file, 'file-to-mint.zip', deleteDoneFiles);
+  //user clicked the download button
+  const id = req.headers.socketid;
+  let file = `${__dirname}/uploads/${id}.zip`
+  res.download(file, 'file-to-mint.zip', function(err){
+
+    if (err) {
+      console.log(err);
+    } else {
+      deleteDoneFiles(id);
+    }
+  
+  });
 }
 
-//helpers
-function deleteDoneFiles (){
+//delete done files
+
+function deleteDoneFiles (id){
   let p = __dirname + '/uploads/';
-  fs.unlink(p + nonce+'.zip', unlinkCb);
-  fs.unlink(p + 'music_'+nonce+'.mp3', unlinkCb);
-  fs.unlink(p + 'cover_'+nonce+'.jpg', unlinkCb);
+  fs.unlink(p + id+'.zip', unlinkCb);
+  fs.unlink(p + 'music_'+id+'.mp3', unlinkCb);
+  fs.unlink(p + 'cover_'+id+'.jpg', unlinkCb);
+
+  //tell the browser we are done
+  io.to(id).emit('event','Done');
 }
 
 function unlinkCb(e){
@@ -144,12 +133,13 @@ io.on('connection', (socket) => {
   socket.emit('socketId', socketId);
   socket.on('disconnect', () => {
     console.log('disconnect  '+ socketId);
+    deleteDoneFiles(socketId);
   });
 });
 
 
 
-app.post("/upload", setStateProcessing, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }, { name: 'socketId'}]), uploadFiles);
+app.post("/upload", setStateProcessing, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
 app.get("/download", downloadFile);
 
 server.listen(3000, () => {

@@ -45,3 +45,15 @@ form input {
 #downloadBtn, #processing {
     display: none;
 }
+
+#processing {
+    color: aqua;
+}
+
+#socketId {
+    display: none;
+}
+
+#menu {
+    display: none;
+}
