@@ -117,11 +117,15 @@ function unlinkCb(e){
 // Initialisa express and socket.io
 const express = require('express');
 const app = express();
+const cors = require('cors')
 const http = require('http');
 const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server);
-
+const io = require('socket.io')(server, {
+  cors: {
+    origin: '*',
+  }
+});
+app.use(cors());
 app.use(express.static(__dirname + '/public'));
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
@@ -142,6 +146,6 @@ io.on('connection', (socket) => {
 app.post("/upload", setStateProcessing, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
 app.get("/download", downloadFile);
 
-server.listen(3000, () => {
+server.listen(3002, () => {
   console.log(`Server started...`);
 });
