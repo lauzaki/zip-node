@@ -146,6 +146,6 @@ io.on('connection', (socket) => {
 app.post("/upload", setStateProcessing, upload.fields([{ name: 'music', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), uploadFiles);
 app.get("/download", downloadFile);
 
-server.listen(3002, () => {
+server.listen(3003, () => {
   console.log(`Server started...`);
 });
